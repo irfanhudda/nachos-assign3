@@ -110,3 +110,16 @@ Condition::~Condition() { }
 void Condition::Wait(Lock* conditionLock) { ASSERT(FALSE); }
 void Condition::Signal(Lock* conditionLock) { }
 void Condition::Broadcast(Lock* conditionLock) { }
+
+void Condition::Wait(Semaphore* sem)
+{
+}
+
+void Condition::Signal(Semaphore* sem)
+{
+}
+
+void Condition::Broadcast(Semaphore* sem)
+{
+}
+

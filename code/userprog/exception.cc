@@ -207,10 +207,10 @@ ExceptionHandler(ExceptionType which)
     else if ((which == SyscallException) && (type == SC_PrintChar)) {
         writeDone->P() ;        // wait for previous write to finish
         console->PutChar(machine->ReadRegister(4));   // echo it!
-       // Advance program counters.
-       machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
-       machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
-       machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+        // Advance program counters.
+        machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+        machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
     }
     else if ((which == SyscallException) && (type == SC_PrintString)) {
        vaddr = machine->ReadRegister(4);
@@ -293,7 +293,39 @@ ExceptionHandler(ExceptionType which)
        machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
        machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
-    } else {
+    }
+    else if((which == SyscallException) && (type == SC_ShmAllocate)) 
+      {
+	unsigned reqMem = machine->ReadRegister(4); // Bytes
+	ASSERT(reqMem >= 0);
+	unsigned virtAddr = currentThread->space->AllocateSharedMem((unsigned)reqMem);
+	machine->WriteRegister(2, virtAddr);  // Return value
+	// Advance program counters.
+	machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+	machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+	machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+      }
+    else if((which == SyscallException) && (type == SC_ShmAllocate)) 
+      {
+	unsigned reqMem = machine->ReadRegister(4); // Bytes
+	ASSERT(reqMem >= 0);
+	unsigned virtAddr = currentThread->space->AllocateSharedMem((unsigned)reqMem);
+	machine->WriteRegister(2, virtAddr);  // Return value
+	// Advance program counters.
+	machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+	machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+	machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+      }
+    else if((which == SyscallException) && (type == SC_SemGet))
+      {
+      }
+    else if((which == SyscallException) && (type == SC_SemOp))
+      {
+      }
+    else if((which == SyscallException) && (type == SC_SemCtl))
+      {
+      }
+    else {
 	printf("Unexpected user mode exception %d %d\n", which, type);
 	ASSERT(FALSE);
     }

@@ -35,14 +35,17 @@ class AddrSpace {
     void RestoreState();		// info on a context switch
 
     unsigned GetNumPages();
-
+    unsigned GetNumSharedPages();
     TranslationEntry* GetPageTable();
+    
+    unsigned int AllocateSharedMem(unsigned int reqMem);
 
   private:
     TranslationEntry *pageTable;	// Assume linear page table translation
 					// for now!
     unsigned int numPages;		// Number of pages in the virtual 
 					// address space
+    unsigned int numSharedPages;        // Number of shared pages
 };
 
 #endif // ADDRSPACE_H
