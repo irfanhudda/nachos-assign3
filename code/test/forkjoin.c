@@ -9,6 +9,7 @@ main()
     PrintInt(GetPID());
     PrintChar('\n');
     x = Fork();
+    
     if (x == 0) {
        PrintString("Child PID: ");
        PrintInt(GetPID());
@@ -30,5 +31,6 @@ main()
        PrintChar('\n');
        Join(x);
     }
+    
     return 0;
 }

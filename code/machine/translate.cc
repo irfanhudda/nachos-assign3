@@ -95,8 +95,13 @@ Machine::ReadMem(int addr, int size, int *value)
     
     exception = Translate(addr, &physicalAddress, size, FALSE);
     if (exception != NoException) {
-	machine->RaiseException(exception, addr);
-	return FALSE;
+        machine->RaiseException(exception, addr);
+        if(exception == PageFaultException)
+          exception = Translate(addr, &physicalAddress, size, FALSE);
+        else
+          {
+            return FALSE;
+          }
     }
     switch (size) {
       case 1:
@@ -145,7 +150,12 @@ Machine::WriteMem(int addr, int size, int value)
     exception = Translate(addr, &physicalAddress, size, TRUE);
     if (exception != NoException) {
 	machine->RaiseException(exception, addr);
-	return FALSE;
+        if(exception == PageFaultException)
+          exception = Translate(addr, &physicalAddress, size, FALSE);
+        else
+          {
+            return FALSE;
+          }
     }
     switch (size) {
       case 1:

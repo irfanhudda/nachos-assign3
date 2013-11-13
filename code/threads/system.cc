@@ -54,6 +54,9 @@ PostOffice *postOffice;
 #endif
 
 
+// Page map
+int pageMap[NumPhysPages];
+
 // External definition, to allow us to take a pointer to this function
 extern void Cleanup();
 
@@ -256,3 +259,11 @@ Cleanup()
     Exit(0);
 }
 
+int nextClearPage()
+{
+  for(int i = 0; i < NumPhysPages; i++)
+    if(pageMap[i] == -1)
+      return i;
+  
+  return -1;
+}

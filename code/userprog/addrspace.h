@@ -46,6 +46,12 @@ class AddrSpace {
     unsigned int numPages;		// Number of pages in the virtual 
 					// address space
     unsigned int numSharedPages;        // Number of shared pages
+
+ public:
+    char *buffer;                       // Backup array
+    void LoadPage(int pageNum);
+    char *exec;
+    AddrSpace(char *filename);
 };
 
 #endif // ADDRSPACE_H
