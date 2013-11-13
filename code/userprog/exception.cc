@@ -305,27 +305,79 @@ ExceptionHandler(ExceptionType which)
 	machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
 	machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
       }
-    else if((which == SyscallException) && (type == SC_ShmAllocate)) 
-      {
-	unsigned reqMem = machine->ReadRegister(4); // Bytes
-	ASSERT(reqMem >= 0);
-	unsigned virtAddr = currentThread->space->AllocateSharedMem((unsigned)reqMem);
-	machine->WriteRegister(2, virtAddr);  // Return value
-	// Advance program counters.
-	machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
-	machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
-	machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+    else if ((which == SyscallException) && (type == SC_SemGet)) {
+       int semaphoreKey = machine->ReadRegister(4);
+       Semaphore* toBeReturned;
+       for (i = 0; i < 100; ++i)
+       {
+         if(semaphoreKeyIndexMap[i]==semaphoreKey){
+          toBeReturned = semaphoreMap[i];
+          break;
+         }
+       }
+       
+      //if not found
+      if(i==100){
+        toBeReturned=new Semaphore("",0);
+        for (i = 0; i < 100; ++i){
+         if(semaphoreKeyIndexMap[i]==-1){
+          semaphoreMap[i] = toBeReturned ;
+          semaphoreKeyIndexMap[i] = semaphoreKey;
+          break;
+         }
+       } 
+      } 
+      
+       machine->WriteRegister(2, i);  // Return value
+       // Advance program counters.
+       machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+       machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+       machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+    }
+    else if ((which == SyscallException) && (type == SC_SemOp)) {
+       int semaphoreid = machine->ReadRegister(4);
+       int newValue = machine->ReadRegister(5);
+       
+       if(newValue==1){
+        semaphoreMap[i]->P();
+       }
+       else{
+        semaphoreMap[i]->V();
       }
-    else if((which == SyscallException) && (type == SC_SemGet))
-      {
-      }
-    else if((which == SyscallException) && (type == SC_SemOp))
-      {
-      }
-    else if((which == SyscallException) && (type == SC_SemCtl))
-      {
-      }
-    else {
+       // Advance program counters.
+       machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+       machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+       machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+    }
+    else if ((which == SyscallException) && (type == SC_SemCtl)) {
+       int semaphoreid = machine->ReadRegister(4);
+       int command = machine->ReadRegister(5);
+       int addr = machine->ReadRegister(6);
+       if(semaphoreKeyIndexMap[semaphoreid]==-1){
+        machine->WriteRegister(2, 1);  // Return value 
+       }
+       if(command==SYNCH_REMOVE){
+        semaphoreKeyIndexMap[semaphoreid]=-1;
+        delete semaphoreMap[semaphoreid];
+       machine->WriteRegister(2, 0);  // Return value
+       }
+       else if(command==SYNCH_GET){
+        machine->WriteRegister(addr, semaphoreMap[semaphoreid]->getValue());
+       machine->WriteRegister(2, 0);  // Return value
+       }
+       else if(command == SYNCH_SET){
+        semaphoreMap[semaphoreid]->setValue(machine->ReadRegister(addr));
+       machine->WriteRegister(2, 0);  // Return value
+       }
+       else{
+       machine->WriteRegister(2, 1);  // Return value
+       }
+       // Advance program counters.
+       machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+       machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+       machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+    }
+     else {
 	printf("Unexpected user mode exception %d %d\n", which, type);
 	ASSERT(FALSE);
     }
