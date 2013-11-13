@@ -63,6 +63,7 @@ extern int completionTimeArray[];	// Records the completion time of all simulate
 extern bool excludeMainThread;		// Used by completion time statistics calculation
 
 extern int pageMap[];
+extern bool replaceablePage[];
 extern int nextClearPage();
 
 class TimeSortedWaitQueue {		// Needed to implement SC_Sleep

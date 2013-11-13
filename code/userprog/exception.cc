@@ -55,6 +55,7 @@ static void ReadAvail(int arg) { readAvail->V(); }
 static void WriteDone(int arg) { writeDone->V(); }
 
 extern void StartProcess (char*);
+void HandlePageFaultException();
 
 void
 ForkStartFunction (int dummy)
@@ -379,13 +380,30 @@ ExceptionHandler(ExceptionType which)
     }
     else if(which == PageFaultException)
       {
-        //printf("PageFaultException %d\n", machine->registers[BadVAddrReg]);
-        int pgNum = (machine->registers[BadVAddrReg])/PageSize;
-        currentThread->space->LoadPage(pgNum);
-        //ASSERT(FALSE);
+              HandlePageFaultException();
       }
      else {
 	printf("Unexpected user mode exception %d %d\n", which, type);
 	ASSERT(FALSE);
     }
+}
+
+void HandlePageFaultException()
+{
+        //printf("PageFaultException %d\n", machine->registers[BadVAddrReg]);
+        int pgNum = (machine->registers[BadVAddrReg])/PageSize;
+        // currentThread->space->LoadPage(pgNum);
+        int findPPN = nextClearPage();
+        if(findPPN == -1)
+        {
+                printf("Replacement\n");
+                // Replacement
+        }
+        else
+        {
+                
+                currentThread->space->ReplacePage(pgNum, findPPN);
+                pageMap[findPPN] = 1; 
+        }
+        //ASSERT(FALSE);
 }

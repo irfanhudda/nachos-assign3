@@ -190,8 +190,9 @@ AddrSpace :: AddrSpace(char* filename)
 						// to leave room for the stack
     numPages = divRoundUp(size, PageSize);
     size = numPages * PageSize;
+    buffer = new char[size];
 
-    ASSERT(numPages+numPagesAllocated <= NumPhysPages);		// check we're not trying
+    //ASSERT(numPages+numPagesAllocated <= NumPhysPages);		// check we're not trying
 								// to run anything too big --
 								// at least until we have
 								// virtual memory
@@ -214,6 +215,7 @@ AddrSpace :: AddrSpace(char* filename)
 					// a separate page, we could set its 
 					// pages to be read-only
 	pageTable[i].shared = FALSE;
+        pageTable[i].inBuffer = FALSE;
     }
     // zero out the entire address space, to zero the unitialized data segment 
     // and the stack segment
@@ -245,30 +247,51 @@ AddrSpace::AddrSpace(AddrSpace *parentSpace)
     // first, set up the translation
     TranslationEntry* parentPageTable = parentSpace->GetPageTable();
     pageTable = new TranslationEntry[numPages];
+    buffer = new char[size];
     for (i = 0; i < numPages; i++) {
         pageTable[i].virtualPage = i;
-        pageTable[i].valid = parentPageTable[i].valid;
+        pageTable[i].valid = FALSE;
         pageTable[i].physicalPage = -1;
+        pageTable[i].inBuffer = FALSE;
         if(parentPageTable[i].valid == TRUE)
         {
                 if(parentPageTable[i].shared == FALSE)
                 {
-                        int phyPage = nextClearPage();
-                        ASSERT(phyPage != -1);
+                        // int phyPage = nextClearPage();
+                        // ASSERT(phyPage != -1);
                         
-                        pageTable[i].physicalPage = phyPage;
-                        pageMap[phyPage] = 1;
-                        numPagesAllocated++;
+                        // pageTable[i].physicalPage = phyPage;
+                        // pageMap[phyPage] = 1;
+                        // numPagesAllocated++;
                         int pphyPage = parentPageTable[i].physicalPage;
-
+                       
                         for (int j=0; j<PageSize; j++) 
                         {
-                                machine->mainMemory[phyPage*PageSize+j] = machine->mainMemory[pphyPage*PageSize+j];
+                                buffer[i*PageSize + j] 
+                                        = machine->mainMemory[pphyPage*PageSize+j];
                         }
+                        pageTable[i].inBuffer = TRUE;
                 }
                 else
                 {
+                        
                         pageTable[i].physicalPage = parentPageTable[i].physicalPage;
+                        pageTable[i].valid = TRUE;
+                }
+        }
+        else
+        {
+                
+                if(parentPageTable[i].inBuffer == TRUE)
+                {
+                        int pphyPage = parentPageTable[i].physicalPage;
+                        
+                        for (int j=0; j<PageSize; j++) 
+                        {
+                                buffer[i*PageSize + j] 
+                                        = parentSpace->buffer[i*PageSize+j];
+                        }
+                        pageTable[i].inBuffer = TRUE;
                 }
         }
         
@@ -279,6 +302,7 @@ AddrSpace::AddrSpace(AddrSpace *parentSpace)
                                         			// pages to be read-only
 	pageTable[i].shared = parentPageTable[i].shared;
     }
+    
     exec = parentSpace->exec;
     // Copy the contents
     // unsigned startAddrParent = parentPageTable[0].physicalPage*PageSize;
@@ -409,8 +433,13 @@ AddrSpace::AllocateSharedMem(unsigned reqMem)
   for(int i = numPages-reqPages; i < numPages; i++)
     {
       newPageTable[i].virtualPage = i;
-      newPageTable[i].physicalPage = (numPages-i) + numPagesAllocated;
-      
+      {
+              int ppn = nextClearPage();
+              ASSERT(ppn != -1);
+              pageMap[ppn] = 1;
+              newPageTable[i].physicalPage = ppn;
+              replaceablePage[ppn] = false;
+      }
       newPageTable[i].valid = TRUE;
       newPageTable[i].use = FALSE;
       newPageTable[i].dirty = FALSE;
@@ -431,7 +460,7 @@ AddrSpace::AllocateSharedMem(unsigned reqMem)
 //----------------------------------------------------------------------
 // AddrSpace::LoadPage
 //----------------------------------------------------------------------
-
+/*
 void
 AddrSpace::LoadPage(int pageNum)
 {
@@ -442,19 +471,17 @@ AddrSpace::LoadPage(int pageNum)
   pageTable[pageNum].valid = TRUE;
   pageMap[phyPage] = 1;
   numPagesAllocated++;
-  /*
-  for(int i = 0; i < PageSize; i++)
-    {
-      machine->mainMemory[phyPage*PageSize + i] = buffer[pageNum*PageSize + i];
-    }
-  */
+  
+  // for(int i = 0; i < PageSize; i++)
+  //   {
+  //     machine->mainMemory[phyPage*PageSize + i] = buffer[pageNum*PageSize + i];
+  //   } 
 
   
   NoffHeader noffH;
   OpenFile *executable = fileSystem->Open(exec);
   
   // Set shared pages to zero
-  numSharedPages = 0;
   
   executable->ReadAt((char *)&noffH, sizeof(noffH), 0);
   if ((noffH.noffMagic != NOFFMAGIC) && 
@@ -464,4 +491,32 @@ AddrSpace::LoadPage(int pageNum)
   
   executable->ReadAt(&(machine->mainMemory[phyPage * PageSize]),
                      PageSize, noffH.code.inFileAddr+PageSize*pageNum);
+}
+
+*/
+void
+AddrSpace::ReplacePage(int vpn, int ppn)
+{
+        if(pageTable[vpn].inBuffer == TRUE)
+        {
+                for(int i = 0; i < PageSize; i++)
+                        machine->mainMemory[ppn*PageSize+i]=buffer[vpn*PageSize+i];
+        }
+        else
+        {
+                NoffHeader noffH;
+                OpenFile *executable = fileSystem->Open(exec);
+                
+                executable->ReadAt((char *)&noffH, sizeof(noffH), 0);
+                if ((noffH.noffMagic != NOFFMAGIC) && 
+                    (WordToHost(noffH.noffMagic) == NOFFMAGIC))
+                        SwapHeader(&noffH);
+                
+                ASSERT(noffH.noffMagic == NOFFMAGIC);
+                
+                executable->ReadAt(&(machine->mainMemory[ppn * PageSize]),
+                     PageSize, noffH.code.inFileAddr+PageSize*vpn);
+        }
+        pageTable[vpn].valid=TRUE;
+        pageTable[vpn].physicalPage = ppn;
 }

@@ -56,6 +56,7 @@ PostOffice *postOffice;
 
 // Page map
 int pageMap[NumPhysPages];
+bool replaceablePage[NumPhysPages];
 
 // External definition, to allow us to take a pointer to this function
 extern void Cleanup();

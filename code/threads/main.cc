@@ -86,7 +86,10 @@ main(int argc, char **argv)
     int schedPriority = MAX_NICE_PRIORITY;
     //
     for(int i = 0; i < NumPhysPages; i++)
-      pageMap[i] = -1;
+      {
+        replaceablePage[i] = true;
+        pageMap[i] = -1;
+      }
     //
     DEBUG('t', "Entering main");
     (void) Initialize(argc, argv);

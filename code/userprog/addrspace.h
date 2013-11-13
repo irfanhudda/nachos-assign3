@@ -49,9 +49,12 @@ class AddrSpace {
 
  public:
     char *buffer;                       // Backup array
-    void LoadPage(int pageNum);
+    // void LoadPage(int pageNum);         //
+    void ReplacePage(int vpn, int ppn); //
+    void BackupPage(int vpn);
     char *exec;
     AddrSpace(char *filename);
+    
 };
 
 #endif // ADDRSPACE_H
