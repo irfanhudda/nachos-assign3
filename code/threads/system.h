@@ -15,7 +15,7 @@
 #include "interrupt.h"
 #include "stats.h"
 #include "timer.h"
-
+#include "synch.h"
 #define MAX_THREAD_COUNT 1000
 #define MAX_BATCH_SIZE 100
 
@@ -53,11 +53,11 @@ extern Thread *threadArray[];  // Array of thread pointers
 extern unsigned thread_index;                  // Index into this array (also used to assign unique pid)
 extern bool initializedConsoleSemaphores;	// Used to initialize the semaphores for console I/O exactly once
 extern bool exitThreadArray[];		// Marks exited threads
-
 extern int schedulingAlgo;		// Scheduling algorithm to simulate
 extern char **batchProcesses;		// Names of batch executables
 extern int *priority;			// Process priority
-
+extern Semaphore* semaphoreMap[];
+extern int semaphoreKeyIndexMap[];
 extern int cpu_burst_start_time;	// Records the start of current CPU burst
 extern int completionTimeArray[];	// Records the completion time of all simulated threads
 extern bool excludeMainThread;		// Used by completion time statistics calculation

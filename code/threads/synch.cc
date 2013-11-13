@@ -97,6 +97,19 @@ Semaphore::V()
     (void) interrupt->SetLevel(oldLevel);
 }
 
+void
+Semaphore::setValue(int val)
+{
+    value = val;
+}
+
+int
+Semaphore::getValue()
+{
+    return value;
+}
+
+
 // Dummy functions -- so we can compile our later assignments 
 // Note -- without a correct implementation of Condition::Wait(), 
 // the test case in the network assignment won't work!
