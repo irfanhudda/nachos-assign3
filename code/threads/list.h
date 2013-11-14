@@ -59,7 +59,8 @@ class List {
     void *SortedRemove(int *keyPtr); 	  	// Remove first item from list
 
     void *GetMinPriorityThread (void);
-
+    ListElement *GetFirst();
+    ListElement *GetLast();
   private:
     ListElement *first;  	// Head of the list, NULL if list is empty
     ListElement *last;		// Last element of list

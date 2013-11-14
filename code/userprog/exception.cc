@@ -415,7 +415,7 @@ void HandlePageFaultException()
         pageMap[findPPN].inUse = true; 
         pageMap[findPPN].owner = currentThread;
         pageMap[findPPN].vpn = pgNum;
-        PPageQueue->Append(&pageMap[findPPN],0);
+        PPageQueue->Append((void*)&pageMap[findPPN]);
 
         //ASSERT(FALSE);
 }

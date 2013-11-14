@@ -32,12 +32,12 @@ int schedulingAlgo;			// Scheduling algorithm to simulate
 char **batchProcesses;			// Names of batch processes
 int *priority;				// Process priority
 Semaphore* semaphoreMap[100];
-ListElement *LRUClockHand
+
 int semaphoreKeyIndexMap[100];
 int cpu_burst_start_time;        // Records the start of current CPU burst
 int completionTimeArray[MAX_THREAD_COUNT];        // Records the completion time of all simulated threads
 bool excludeMainThread;		// Used by completion time statistics calculation
-PPageInfo PPageQueue = new List;
+List *PPageQueue = new List;
 #ifdef FILESYS_NEEDED
 FileSystem  *fileSystem;
 #endif
@@ -283,17 +283,17 @@ int FreeLRUPage(){
     return oldestPage;
 }
 int FreeFIFO(){
- return PPageQueue->Remove()->ppn;   
+  return ((PPageInfo *)(PPageQueue->Remove()))->ppn;   
 }
 int FreeLRUClockPage(){
     ListElement* first=PPageQueue->GetFirst();
     ListElement* last=PPageQueue->GetLast();
     ListElement* iter=first;
     while(iter!=NULL){
-        ASSERT(iter->item->isReplaceable);
-        if(iter->item->secondChance){
+      ASSERT(((PPageInfo *)(iter->item))->isReplaceable);
+      if(((PPageInfo *)(iter->item))->secondChance){
             ListElement *temp = iter->next;
-            iter->item->secondChance=false;
+            ((PPageInfo *)(iter->item))->secondChance=false;
             PPageQueue->Append(iter->item);
             PPageQueue->Remove();
             iter=temp;
@@ -301,7 +301,7 @@ int FreeLRUClockPage(){
         else
             break;
     }
-    return PPageQueue->Remove()->ppn;
+    return ((PPageInfo *)(PPageQueue->Remove()))->ppn;
 }
 int FreeSomePage()
 {

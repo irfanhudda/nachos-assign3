@@ -160,7 +160,7 @@ List::Append(void *item)
   else
    return FALSE; 
 }
-
+/*
 //-----------------------------------------------------------------------
 // List::RemoveElement
 //   Deletes element which matched the given element
@@ -185,7 +185,7 @@ List::RemoveElement(void *inpItem){
     previter=iter;
     iter=item->next;
   }
-}
+  }*/
 //----------------------------------------------------------------------
 // List::SortedInsert
 //      Insert an "item" into a list, so that the list elements are
@@ -262,11 +262,11 @@ List::SortedRemove(int *keyPtr)
     return thing;
   }
 
-
-  ListElement *GetFirst(){
+ListElement *
+List::GetFirst(){
     return first;
   }
-  ListElement *GetLast(){
+ListElement *List::GetLast(){
     return last;
   }
 
