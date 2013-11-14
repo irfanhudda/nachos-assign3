@@ -33,19 +33,20 @@ StartProcess(char *filename)
 {
     OpenFile *executable = fileSystem->Open(filename);
     AddrSpace *space;
-
+    
     if (executable == NULL) {
 	printf("Unable to open file %s\n", filename);
 	return;
     }
     //space = new AddrSpace(executable);    
+    
     space = new AddrSpace(filename);
     if(currentThread->space != NULL)
       delete currentThread->space;
     currentThread->space = space;
 
     delete executable;			// close file
-
+    
     space->InitRegisters();		// set the initial register values
     space->RestoreState();		// load page table register
 

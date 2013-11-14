@@ -62,9 +62,19 @@ extern int cpu_burst_start_time;	// Records the start of current CPU burst
 extern int completionTimeArray[];	// Records the completion time of all simulated threads
 extern bool excludeMainThread;		// Used by completion time statistics calculation
 
-extern int pageMap[];
-extern bool replaceablePage[];
+//extern int pageMap[];
+//extern bool replaceablePage[];
 extern int nextClearPage();
+
+typedef struct{
+        Thread *owner;
+        int vpn;
+        bool isReplaceable;
+        bool inUse;
+}PPageInfo;
+extern PPageInfo pageMap[];
+extern int FreeSomePage();
+extern int replaceAlgo;
 
 class TimeSortedWaitQueue {		// Needed to implement SC_Sleep
 private:

@@ -87,9 +87,11 @@ main(int argc, char **argv)
     //
     for(int i = 0; i < NumPhysPages; i++)
       {
-        replaceablePage[i] = true;
-        pageMap[i] = -1;
+        pageMap[i].inUse = false;
+        pageMap[i].isReplaceable = true;
+        pageMap[i].owner = NULL;
       }
+    replaceAlgo = 1;
     //
     DEBUG('t', "Entering main");
     (void) Initialize(argc, argv);

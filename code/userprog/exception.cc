@@ -111,6 +111,15 @@ ExceptionHandler(ExceptionType which)
        // The children will continue to run.
        // We will worry about this when and if we implement signals.
        exitThreadArray[currentThread->GetPID()] = true;
+       AddrSpace *temp = currentThread->space;
+       TranslationEntry* pageTable = temp->GetPageTable();
+       
+       for(i = 0; i < temp->GetNumPages(); i++)
+               if(pageTable[i].valid == TRUE && pageTable[i].shared == FALSE)
+               {
+                       pageMap[pageTable[i].physicalPage].inUse = false;
+                       pageMap[pageTable[i].physicalPage].owner = NULL;
+               }
 
        // Find out if all threads have called exit
        for (i=0; i<thread_index; i++) {
@@ -396,14 +405,15 @@ void HandlePageFaultException()
         int findPPN = nextClearPage();
         if(findPPN == -1)
         {
-                printf("Replacement\n");
+                //printf("Replacement\n");
+                findPPN = FreeSomePage();
+                ASSERT(findPPN != -1);
                 // Replacement
-        }
-        else
-        {
-                
-                currentThread->space->ReplacePage(pgNum, findPPN);
-                pageMap[findPPN] = 1; 
-        }
+        }        
+        currentThread->space->ReplacePage(pgNum, findPPN);
+        pageMap[findPPN].inUse = true; 
+        pageMap[findPPN].owner = currentThread;
+        pageMap[findPPN].vpn = pgNum;
+
         //ASSERT(FALSE);
 }

@@ -183,15 +183,16 @@ AddrSpace :: AddrSpace(char* filename)
 		(WordToHost(noffH.noffMagic) == NOFFMAGIC))
     	SwapHeader(&noffH);
     ASSERT(noffH.noffMagic == NOFFMAGIC);
-
+    
     // how big is address space?
     size = noffH.code.size + noffH.initData.size + noffH.uninitData.size 
 			+ UserStackSize;	// we need to increase the size
 						// to leave room for the stack
     numPages = divRoundUp(size, PageSize);
     size = numPages * PageSize;
+    
     buffer = new char[size];
-
+    
     //ASSERT(numPages+numPagesAllocated <= NumPhysPages);		// check we're not trying
 								// to run anything too big --
 								// at least until we have
@@ -202,6 +203,7 @@ AddrSpace :: AddrSpace(char* filename)
 					numPages, size);
     // first, set up the translation 
     pageTable = new TranslationEntry[numPages];
+    
     for (i = 0; i < numPages; i++) {
 	pageTable[i].virtualPage = i;
 	// pageTable[i].physicalPage = i+numPagesAllocated;
@@ -221,7 +223,7 @@ AddrSpace :: AddrSpace(char* filename)
     // and the stack segment
     
     
-    bzero(&machine->mainMemory[numPagesAllocated*PageSize], size);
+    //bzero(&machine->mainMemory[numPagesAllocated*PageSize], size);
 
     exec = filename;
 }
@@ -237,7 +239,7 @@ AddrSpace::AddrSpace(AddrSpace *parentSpace)
     unsigned i, size = numPages * PageSize;
     numSharedPages = parentSpace->GetNumSharedPages();
 
-    ASSERT(numPages+numPagesAllocated-numSharedPages <= NumPhysPages);        // check we're not trying
+    //ASSERT(numPages+numPagesAllocated-numSharedPages <= NumPhysPages);        // check we're not trying
                                                                                 // to run anything too big --
                                                                                 // at least until we have
                                                                                 // virtual memory
@@ -322,7 +324,9 @@ AddrSpace::AddrSpace(AddrSpace *parentSpace)
 
 AddrSpace::~AddrSpace()
 {
-   delete pageTable;
+
+        delete pageTable;
+        delete buffer;
 }
 
 //----------------------------------------------------------------------
@@ -436,9 +440,9 @@ AddrSpace::AllocateSharedMem(unsigned reqMem)
       {
               int ppn = nextClearPage();
               ASSERT(ppn != -1);
-              pageMap[ppn] = 1;
+              pageMap[ppn].inUse = true;
               newPageTable[i].physicalPage = ppn;
-              replaceablePage[ppn] = false;
+              pageMap[i].isReplaceable = false;
       }
       newPageTable[i].valid = TRUE;
       newPageTable[i].use = FALSE;
@@ -519,4 +523,27 @@ AddrSpace::ReplacePage(int vpn, int ppn)
         }
         pageTable[vpn].valid=TRUE;
         pageTable[vpn].physicalPage = ppn;
+}
+
+
+int
+AddrSpace::BackupPage(int vpn)
+{
+        
+        ASSERT(pageTable[vpn].valid == TRUE);
+        
+        int ppn = pageTable[vpn].physicalPage;
+        
+        for(int i = 0; i < PageSize; i++)
+        {
+                
+                buffer[vpn*PageSize + i] = machine->mainMemory[ppn*PageSize+i];
+        }
+        
+        pageTable[vpn].valid = FALSE;
+        pageTable[vpn].inBuffer = TRUE;
+        
+        pageMap[ppn].inUse = false;
+        pageMap[ppn].owner = NULL;
+        return ppn;
 }

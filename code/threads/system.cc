@@ -55,8 +55,8 @@ PostOffice *postOffice;
 
 
 // Page map
-int pageMap[NumPhysPages];
-bool replaceablePage[NumPhysPages];
+PPageInfo pageMap[NumPhysPages];
+int replaceAlgo;
 
 // External definition, to allow us to take a pointer to this function
 extern void Cleanup();
@@ -263,8 +263,29 @@ Cleanup()
 int nextClearPage()
 {
   for(int i = 0; i < NumPhysPages; i++)
-    if(pageMap[i] == -1)
+    if(pageMap[i].inUse == false)
       return i;
-  
   return -1;
+}
+
+int FreeSomePage()
+{
+        int ppn;
+        switch(replaceAlgo)
+        {
+        case 2:
+                break;
+        case 3:
+                break;
+        case 4:
+                break;
+        default:
+                
+                ppn = Random()%NumPhysPages;
+                break;
+        }
+        //printf("HERE %d %d %d\n", ppn,pageMap[ppn].vpn,pageMap[ppn].owner->GetPID());
+        pageMap[ppn].owner->space->BackupPage(pageMap[ppn].vpn);
+        
+        return ppn;
 }
