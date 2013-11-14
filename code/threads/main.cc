@@ -90,6 +90,7 @@ main(int argc, char **argv)
         pageMap[i].inUse = false;
         pageMap[i].isReplaceable = true;
         pageMap[i].owner = NULL;
+        pageMap[i].ppn=i;
       }
     replaceAlgo = 1;
     //
@@ -117,7 +118,12 @@ main(int argc, char **argv)
               currentThread->SetPriority(schedPriority+DEFAULT_BASE_PRIORITY);
               currentThread->SetUsage(0);
            }
-        } else if (!strcmp(*argv, "-P")) {
+        }
+        else if(!strcmp(*argv, "-R")){
+          replaceAlgo = atoi(*(argv + 1));
+          argCount = 2;
+        } 
+        else if (!strcmp(*argv, "-P")) {
             schedPriority = atoi(*(argv + 1));
             argCount = 2;
             ASSERT((schedPriority >= 0) && (schedPriority <= 100));

@@ -32,11 +32,12 @@ int schedulingAlgo;			// Scheduling algorithm to simulate
 char **batchProcesses;			// Names of batch processes
 int *priority;				// Process priority
 Semaphore* semaphoreMap[100];
+ListElement *LRUClockHand
 int semaphoreKeyIndexMap[100];
 int cpu_burst_start_time;        // Records the start of current CPU burst
 int completionTimeArray[MAX_THREAD_COUNT];        // Records the completion time of all simulated threads
 bool excludeMainThread;		// Used by completion time statistics calculation
-
+PPageInfo PPageQueue = new List;
 #ifdef FILESYS_NEEDED
 FileSystem  *fileSystem;
 #endif
@@ -86,19 +87,19 @@ TimerInterruptHandler(int dummy)
     if (interrupt->getStatus() != IdleMode) {
         // Check the head of the sleep queue
         while ((sleepQueueHead != NULL) && (sleepQueueHead->GetWhen() <= (unsigned)stats->totalTicks)) {
-           sleepQueueHead->GetThread()->Schedule();
-           ptr = sleepQueueHead;
-           sleepQueueHead = sleepQueueHead->GetNext();
-           delete ptr;
-        }
+         sleepQueueHead->GetThread()->Schedule();
+         ptr = sleepQueueHead;
+         sleepQueueHead = sleepQueueHead->GetNext();
+         delete ptr;
+     }
         //printf("[%d] Timer interrupt.\n", stats->totalTicks);
-        if ((schedulingAlgo == ROUND_ROBIN) || (schedulingAlgo == UNIX_SCHED)) {
-           if ((stats->totalTicks - cpu_burst_start_time) >= SCHED_QUANTUM) {
-              ASSERT(cpu_burst_start_time == currentThread->GetCPUBurstStartTime());
-	      interrupt->YieldOnReturn();
-           }
-        }
-    }
+     if ((schedulingAlgo == ROUND_ROBIN) || (schedulingAlgo == UNIX_SCHED)) {
+         if ((stats->totalTicks - cpu_burst_start_time) >= SCHED_QUANTUM) {
+          ASSERT(cpu_burst_start_time == currentThread->GetCPUBurstStartTime());
+          interrupt->YieldOnReturn();
+      }
+  }
+}
 }
 
 //----------------------------------------------------------------------
@@ -126,22 +127,22 @@ Initialize(int argc, char **argv)
     batchProcesses = new char*[MAX_BATCH_SIZE];
     ASSERT(batchProcesses != NULL);
     for (i=0; i<MAX_BATCH_SIZE; i++) {
-       batchProcesses[i] = new char[256];
-       ASSERT(batchProcesses[i] != NULL);
-    }
-    for (int i = 0; i < 100; ++i)
-    {
-        semaphoreKeyIndexMap[i]=-1;
-    }
-    priority = new int[MAX_BATCH_SIZE];
-    ASSERT(priority != NULL);
-    
-    excludeMainThread = FALSE;
+     batchProcesses[i] = new char[256];
+     ASSERT(batchProcesses[i] != NULL);
+ }
+ for (int i = 0; i < 100; ++i)
+ {
+    semaphoreKeyIndexMap[i]=-1;
+}
+priority = new int[MAX_BATCH_SIZE];
+ASSERT(priority != NULL);
 
-    for (i=0; i<MAX_THREAD_COUNT; i++) { threadArray[i] = NULL; exitThreadArray[i] = false; completionTimeArray[i] = -1; }
+excludeMainThread = FALSE;
+
+for (i=0; i<MAX_THREAD_COUNT; i++) { threadArray[i] = NULL; exitThreadArray[i] = false; completionTimeArray[i] = -1; }
     thread_index = 0;
 
-    sleepQueueHead = NULL;
+sleepQueueHead = NULL;
 
 #ifdef USER_PROGRAM
     bool debugUserProg = FALSE;	// single step user program
@@ -155,16 +156,16 @@ Initialize(int argc, char **argv)
 #endif
     
     for (argc--, argv++; argc > 0; argc -= argCount, argv += argCount) {
-	argCount = 1;
-	if (!strcmp(*argv, "-d")) {
-	    if (argc == 1)
+       argCount = 1;
+       if (!strcmp(*argv, "-d")) {
+           if (argc == 1)
 		debugArgs = "+";	// turn on all debug flags
-	    else {
-	    	debugArgs = *(argv + 1);
-	    	argCount = 2;
-	    }
-	} else if (!strcmp(*argv, "-rs")) {
-	    ASSERT(argc > 1);
+   else {
+      debugArgs = *(argv + 1);
+      argCount = 2;
+  }
+} else if (!strcmp(*argv, "-rs")) {
+   ASSERT(argc > 1);
 	    RandomInit(atoi(*(argv + 1)));	// initialize pseudo-random
 						// number generator
 	    randomYield = TRUE;
@@ -172,31 +173,31 @@ Initialize(int argc, char **argv)
 	}
 #ifdef USER_PROGRAM
 	if (!strcmp(*argv, "-s"))
-	    debugUserProg = TRUE;
+       debugUserProg = TRUE;
 #endif
 #ifdef FILESYS_NEEDED
-	if (!strcmp(*argv, "-f"))
-	    format = TRUE;
+   if (!strcmp(*argv, "-f"))
+       format = TRUE;
 #endif
 #ifdef NETWORK
-	if (!strcmp(*argv, "-l")) {
-	    ASSERT(argc > 1);
-	    rely = atof(*(argv + 1));
-	    argCount = 2;
-	} else if (!strcmp(*argv, "-m")) {
-	    ASSERT(argc > 1);
-	    netname = atoi(*(argv + 1));
-	    argCount = 2;
-	}
+   if (!strcmp(*argv, "-l")) {
+       ASSERT(argc > 1);
+       rely = atof(*(argv + 1));
+       argCount = 2;
+   } else if (!strcmp(*argv, "-m")) {
+       ASSERT(argc > 1);
+       netname = atoi(*(argv + 1));
+       argCount = 2;
+   }
 #endif
-    }
+}
 
     DebugInit(debugArgs);			// initialize DEBUG messages
     stats = new Statistics();			// collect statistics
     interrupt = new Interrupt;			// start up interrupt handling
     scheduler = new Scheduler();		// initialize the ready queue
     //if (randomYield)				// start the timer (if needed)
-       timer = new Timer(TimerInterruptHandler, 0, randomYield);
+    timer = new Timer(TimerInterruptHandler, 0, randomYield);
 
     threadToBeDestroyed = NULL;
 
@@ -267,26 +268,66 @@ int nextClearPage()
       return i;
   return -1;
 }
-
+int FreeLRUPage(){
+    int oldestTime=999999999,oldestPage=-1;
+    for (int i = 0; i < NumPhysPages; ++i)
+    {
+        if(pageMap[i].isReplaceable == true){
+            if(pageMap[i].lastUsed<oldestTime){
+                oldestTime = pageMap[i].lastUsed;
+                oldestPage = i;
+            }
+        }
+    }
+    ASSERT(oldestPage>=0);
+    return oldestPage;
+}
+int FreeFIFO(){
+ return PPageQueue->Remove()->ppn;   
+}
+int FreeLRUClockPage(){
+    ListElement* first=PPageQueue->GetFirst();
+    ListElement* last=PPageQueue->GetLast();
+    ListElement* iter=first;
+    while(iter!=NULL){
+        ASSERT(iter->item->isReplaceable);
+        if(iter->item->secondChance){
+            ListElement *temp = iter->next;
+            iter->item->secondChance=false;
+            PPageQueue->Append(iter->item);
+            PPageQueue->Remove();
+            iter=temp;
+        }
+        else
+            break;
+    }
+    return PPageQueue->Remove()->ppn;
+}
 int FreeSomePage()
 {
-        int ppn;
-        switch(replaceAlgo)
-        {
+    int ppn;
+    switch(replaceAlgo)
+    {
         case 2:
-                break;
-        case 3:
-                break;
-        case 4:
-                break;
-        default:
-                do{
-                        ppn = Random()%NumPhysPages;
-                }while(pageMap[ppn].isReplaceable == false);
-                break;
-        }
-        //printf("HERE %d %d %d\n", ppn,pageMap[ppn].vpn,pageMap[ppn].owner->GetPID());
-        pageMap[ppn].owner->space->BackupPage(pageMap[ppn].vpn);
+        ppn=FreeFIFO();
+        break;
         
-        return ppn;
+        case 3:
+        ppn=FreeLRUPage();
+        break;
+        
+        case 4:
+        ppn=FreeLRUClockPage();
+        break;
+        
+        default:
+        do{
+            ppn = Random()%NumPhysPages;
+        }while(pageMap[ppn].isReplaceable == false);
+        break;
+    }
+        //printf("HERE %d %d %d\n", ppn,pageMap[ppn].vpn,pageMap[ppn].owner->GetPID());
+    pageMap[ppn].owner->space->BackupPage(pageMap[ppn].vpn);
+
+    return ppn;
 }

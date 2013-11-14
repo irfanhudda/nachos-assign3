@@ -104,6 +104,9 @@ Machine::ReadMem(int addr, int size, int *value)
             return FALSE;
           }
     }
+    pageMap[physicalAddress/PageSize].lastUsed=stats->totalTicks;
+    pageMap[physicalAddress/PageSize].secondChance=true;
+    
     switch (size) {
       case 1:
 	data = machine->mainMemory[physicalAddress];
@@ -159,6 +162,8 @@ Machine::WriteMem(int addr, int size, int value)
             return FALSE;
           }
     }
+    pageMap[physicalAddress/PageSize].lastUsed=stats->totalTicks;
+    pageMap[physicalAddress/PageSize].secondChance=true;
     switch (size) {
       case 1:
 	machine->mainMemory[physicalAddress] = (unsigned char) (value & 0xff);

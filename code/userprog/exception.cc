@@ -403,6 +403,7 @@ void HandlePageFaultException()
         int pgNum = (machine->registers[BadVAddrReg])/PageSize;
         // currentThread->space->LoadPage(pgNum);
         int findPPN = nextClearPage();
+
         if(findPPN == -1)
         {
                 //printf("Replacement\n");
@@ -414,6 +415,7 @@ void HandlePageFaultException()
         pageMap[findPPN].inUse = true; 
         pageMap[findPPN].owner = currentThread;
         pageMap[findPPN].vpn = pgNum;
+        PPageQueue->Append(&pageMap[findPPN],0);
 
         //ASSERT(FALSE);
 }
