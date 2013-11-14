@@ -486,6 +486,7 @@ ExceptionHandler(ExceptionType which)
               if(replaceAlgo == -1)
                       ASSERT(FALSE);
               HandlePageFaultException();
+              currentThread->SortedInsertInWaitQueue (1000+stats->totalTicks);
       }
      else {
 	printf("Unexpected user mode exception %d %d\n", which, type);
@@ -516,6 +517,7 @@ void HandlePageFaultException()
         pageMap[findPPN].vpn = pgNum;
         numPageFaults ++;
         PPageQueue->Append((void*)&pageMap[findPPN]);
+        
         /*
         for(int i = 0; i < NumPhysPages; i++)
         {
