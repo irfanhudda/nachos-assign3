@@ -280,8 +280,9 @@ int FreeSomePage()
         case 4:
                 break;
         default:
-                
-                ppn = Random()%NumPhysPages;
+                do{
+                        ppn = Random()%NumPhysPages;
+                }while(pageMap[ppn].isReplaceable == false);
                 break;
         }
         //printf("HERE %d %d %d\n", ppn,pageMap[ppn].vpn,pageMap[ppn].owner->GetPID());
