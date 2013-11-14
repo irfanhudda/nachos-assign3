@@ -1,3 +1,4 @@
+
 #include "syscall.h"
 
 int
@@ -9,7 +10,6 @@ main()
     PrintInt(GetPID());
     PrintChar('\n');
     x = Fork();
-    
     if (x == 0) {
        PrintString("Child PID: ");
        PrintInt(GetPID());
@@ -20,7 +20,7 @@ main()
        PrintString("Child calling sleep at time: ");
        PrintInt(GetTime());
        PrintChar('\n');
-       Sleep(100);
+       Sleep(100000);
        PrintString("Child returned from sleep at time: ");
        PrintInt(GetTime());
        PrintChar('\n');
@@ -31,6 +31,7 @@ main()
        PrintChar('\n');
        Join(x);
     }
-    
     return 0;
 }
+
+

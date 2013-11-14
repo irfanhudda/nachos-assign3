@@ -291,7 +291,7 @@ Interrupt::Halt()
 
        printf("Completion time statistics for all threads: Max: %d, Min: %d, Avg: %.2f, Variance: %.2f\n", max_completion, min_completion, avg_completion, var_completion);
     }
-
+    printf("PageFaults :: %d\n", numPageFaults);
     Cleanup();     // Never returns.
 }
 

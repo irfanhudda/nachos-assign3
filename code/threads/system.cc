@@ -34,6 +34,9 @@ int *priority;				// Process priority
 Semaphore* semaphoreMap[100];
 
 int semaphoreKeyIndexMap[100];
+Condition* conditionMap[100];
+int conditionKeyIndexMap[100];
+
 int cpu_burst_start_time;        // Records the start of current CPU burst
 int completionTimeArray[MAX_THREAD_COUNT];        // Records the completion time of all simulated threads
 bool excludeMainThread;		// Used by completion time statistics calculation
@@ -58,6 +61,7 @@ PostOffice *postOffice;
 // Page map
 PPageInfo pageMap[NumPhysPages];
 int replaceAlgo;
+int numPageFaults = 0;
 
 // External definition, to allow us to take a pointer to this function
 extern void Cleanup();
@@ -133,6 +137,7 @@ Initialize(int argc, char **argv)
  for (int i = 0; i < 100; ++i)
  {
     semaphoreKeyIndexMap[i]=-1;
+    conditionKeyIndexMap[i]=-1;
 }
 priority = new int[MAX_BATCH_SIZE];
 ASSERT(priority != NULL);
@@ -326,8 +331,12 @@ int FreeSomePage()
         }while(pageMap[ppn].isReplaceable == false);
         break;
     }
-        //printf("HERE %d %d %d\n", ppn,pageMap[ppn].vpn,pageMap[ppn].owner->GetPID());
+    //printf("HERE11 %d\n",ppn);
+    ASSERT(pageMap[ppn].isReplaceable == true);
+    ASSERT(pageMap[ppn].owner != NULL);
+    
+    //printf("HERE %d %d %d\n", ppn,pageMap[ppn].vpn,pageMap[ppn].owner->GetPID());
     pageMap[ppn].owner->space->BackupPage(pageMap[ppn].vpn);
-
+    
     return ppn;
 }

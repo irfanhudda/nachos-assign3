@@ -14,7 +14,8 @@
 
 int
 main()
-{
-    PrintString("hello world\n");
+{ 
+	//PrintChar('a');
+	PrintString("Hello World\n");
     return 0;
 }

@@ -38,9 +38,11 @@ StartProcess(char *filename)
 	printf("Unable to open file %s\n", filename);
 	return;
     }
-    //space = new AddrSpace(executable);    
-    
-    space = new AddrSpace(filename);
+    if(replaceAlgo == -1)
+      space = new AddrSpace(executable);    
+    else
+      space = new AddrSpace(filename);
+
     if(currentThread->space != NULL)
       delete currentThread->space;
     currentThread->space = space;

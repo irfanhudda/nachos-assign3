@@ -58,6 +58,8 @@ extern char **batchProcesses;		// Names of batch executables
 extern int *priority;			// Process priority
 extern Semaphore* semaphoreMap[];
 extern int semaphoreKeyIndexMap[];
+extern Condition* conditionMap[];
+extern int conditionKeyIndexMap[];
 extern int cpu_burst_start_time;	// Records the start of current CPU burst
 extern int completionTimeArray[];	// Records the completion time of all simulated threads
 extern bool excludeMainThread;		// Used by completion time statistics calculation
@@ -65,6 +67,7 @@ extern bool excludeMainThread;		// Used by completion time statistics calculatio
 //extern int pageMap[];
 //extern bool replaceablePage[];
 extern int nextClearPage();
+extern int numPageFaults;
 
 typedef struct{
         Thread *owner;

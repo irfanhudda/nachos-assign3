@@ -110,6 +110,53 @@ Semaphore::getValue()
 }
 
 
+Condition::Condition(char* debugName)
+{
+    name = debugName;
+    queue = new List;
+}
+
+void Condition::Wait(Semaphore* conditionSemaphore) {
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts
+    
+    conditionSemaphore->V();
+    queue->Append((void *)currentThread);
+    currentThread->Sleep();
+    conditionSemaphore->P();
+    
+    (void) interrupt->SetLevel(oldLevel);	// re-enable interrupts
+
+
+}
+
+void Condition::Signal() {
+    Thread *thread;
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);
+
+    thread = (Thread *)queue->Remove();
+    if (thread != NULL) 
+	scheduler->ReadyToRun(thread);
+    (void) interrupt->SetLevel(oldLevel);
+
+}
+
+void Condition::Broadcast() {
+    Thread *thread;
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);
+
+    while (queue->IsEmpty()) {
+        thread = (Thread *)queue->Remove();
+        if (thread != NULL)
+            scheduler->ReadyToRun(thread);
+    }
+    (void) interrupt->SetLevel(oldLevel);
+}
+
+Condition::~Condition()
+{
+    delete queue;
+}
+
 // Dummy functions -- so we can compile our later assignments 
 // Note -- without a correct implementation of Condition::Wait(), 
 // the test case in the network assignment won't work!
@@ -118,8 +165,6 @@ Lock::~Lock() {}
 void Lock::Acquire() {}
 void Lock::Release() {}
 
-Condition::Condition(char* debugName) { }
-Condition::~Condition() { }
 void Condition::Wait(Lock* conditionLock) { ASSERT(FALSE); }
 void Condition::Signal(Lock* conditionLock) { }
 void Condition::Broadcast(Lock* conditionLock) { }

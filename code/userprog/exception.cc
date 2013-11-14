@@ -315,8 +315,11 @@ ExceptionHandler(ExceptionType which)
 	machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
 	machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
       }
+    
     else if ((which == SyscallException) && (type == SC_SemGet)) {
+        DEBUG('h',"b1\n");
        int semaphoreKey = machine->ReadRegister(4);
+        DEBUG('h',"b2\n");
        Semaphore* toBeReturned;
        for (i = 0; i < 100; ++i)
        {
@@ -328,7 +331,7 @@ ExceptionHandler(ExceptionType which)
        
       //if not found
       if(i==100){
-        toBeReturned=new Semaphore("",0);
+        toBeReturned=new Semaphore("",2);
         for (i = 0; i < 100; ++i){
          if(semaphoreKeyIndexMap[i]==-1){
           semaphoreMap[i] = toBeReturned ;
@@ -347,22 +350,26 @@ ExceptionHandler(ExceptionType which)
     else if ((which == SyscallException) && (type == SC_SemOp)) {
        int semaphoreid = machine->ReadRegister(4);
        int newValue = machine->ReadRegister(5);
+        DEBUG('h',"c1 %d %d\n",semaphoreid,newValue);
        
-       if(newValue==1){
-        semaphoreMap[i]->P();
+       if(newValue==-1){
+        semaphoreMap[semaphoreid]->P();
        }
        else{
-        semaphoreMap[i]->V();
+        semaphoreMap[semaphoreid]->V();
       }
+        DEBUG('h',"c2\n");
        // Advance program counters.
        machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
        machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
     }
     else if ((which == SyscallException) && (type == SC_SemCtl)) {
+        DEBUG('h',"d1\n");
        int semaphoreid = machine->ReadRegister(4);
        int command = machine->ReadRegister(5);
        int addr = machine->ReadRegister(6);
+        DEBUG('h',"d2 %d\n",addr);
        if(semaphoreKeyIndexMap[semaphoreid]==-1){
         machine->WriteRegister(2, 1);  // Return value 
        }
@@ -372,11 +379,23 @@ ExceptionHandler(ExceptionType which)
        machine->WriteRegister(2, 0);  // Return value
        }
        else if(command==SYNCH_GET){
-        machine->WriteRegister(addr, semaphoreMap[semaphoreid]->getValue());
+//        int vpn = addr/PageSize;
+//        int ppn = (currentThread->space->GetPageTable())[vpn].physicalPage;
+//        int paddr = ppn*PageSize+addr%PageSize;
+//        printf("ankhee: %d\n",machine->mainMemory[paddr]);
+        //machine->mainMemory[paddr]=semaphoreMap[semaphoreid]->getValue();
+        //printf("ankhee: %d\n",machine->mainMemory[paddr]);
+        machine->WriteMem(addr,sizeof(int),semaphoreMap[semaphoreid]->getValue());
+
        machine->WriteRegister(2, 0);  // Return value
        }
        else if(command == SYNCH_SET){
-        semaphoreMap[semaphoreid]->setValue(machine->ReadRegister(addr));
+        DEBUG('h',"mem\n");
+            int semValue;
+            machine->ReadMem(addr, sizeof(int), &semValue);
+            semaphoreMap[semaphoreid]->setValue(semValue);
+            //machine->WriteMem(addr,sizeof(int),semaphoreMap[semaphoreid]->getValue());
+            //printf("irfan: %d\n",machine->mainMemory[paddr]);
        machine->WriteRegister(2, 0);  // Return value
        }
        else{
@@ -387,8 +406,85 @@ ExceptionHandler(ExceptionType which)
        machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
     }
+
+    else if ((which == SyscallException) && (type == SC_CondGet)) {
+        DEBUG('h',"e1\n");
+       int conditionKey = machine->ReadRegister(4);
+       Condition* toBeReturned;
+       for (i = 0; i < 100; ++i)
+       {
+         if(conditionKeyIndexMap[i]==conditionKey){
+          toBeReturned = conditionMap[i];
+          break;
+         }
+       }
+       
+      //if not found
+      if(i==100){
+        toBeReturned=new Condition("");
+        for (i = 0; i < 100; ++i){
+         if(conditionKeyIndexMap[i]==-1){
+          conditionMap[i] = toBeReturned ;
+          conditionKeyIndexMap[i] = conditionKey;
+          break;
+         }
+       } 
+      } 
+      
+       machine->WriteRegister(2, i);  // Return value
+       // Advance program counters.
+       machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+       machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+       machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+    }
+
+    else if ((which == SyscallException) && (type == SC_CondOp)) {
+        int condId = machine->ReadRegister(4);
+        int command = machine->ReadRegister(5);
+        int semaphoreid = machine->ReadRegister(6);
+        DEBUG('h',"f1 %d\n",condId);
+        if(semaphoreKeyIndexMap[semaphoreid]==-1){
+            machine->WriteRegister(2, 1);  // Return value 
+        }
+        if(command== COND_OP_WAIT) {
+            conditionMap[condId]->Wait(semaphoreMap[semaphoreid]);
+        }
+        else if(command==COND_OP_SIGNAL){
+            conditionMap[condId]->Signal();
+        }
+        else if(command == COND_OP_BROADCAST){
+            conditionMap[condId]->Broadcast();
+        }
+        else{
+            machine->WriteRegister(2, 1);  // Return value
+        }
+        // Advance program counters.
+        machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+        machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+    }
+
+    else if ((which == SyscallException) && (type == SC_CondRemove)) {
+        DEBUG('h',"g1\n");
+        int condId = machine->ReadRegister(4);
+        if(conditionKeyIndexMap[condId]==-1) {
+            machine->WriteRegister(2, -1);  // Return value
+        }
+        else {
+            conditionKeyIndexMap[condId]=-1;
+            delete conditionMap[condId];
+            machine->WriteRegister(2, 0);  // Return value
+        }
+
+        // Advance program counters.
+        machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+        machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg)+4);
+    }
     else if(which == PageFaultException)
       {
+              if(replaceAlgo == -1)
+                      ASSERT(FALSE);
               HandlePageFaultException();
       }
      else {
@@ -399,13 +495,15 @@ ExceptionHandler(ExceptionType which)
 
 void HandlePageFaultException()
 {
+        
         //printf("PageFaultException %d\n", machine->registers[BadVAddrReg]);
         int pgNum = (machine->registers[BadVAddrReg])/PageSize;
         // currentThread->space->LoadPage(pgNum);
         int findPPN = nextClearPage();
-
+        ASSERT(currentThread != NULL);
         if(findPPN == -1)
         {
+                
                 //printf("Replacement\n");
                 findPPN = FreeSomePage();
                 ASSERT(findPPN != -1);
@@ -414,8 +512,16 @@ void HandlePageFaultException()
         currentThread->space->ReplacePage(pgNum, findPPN);
         pageMap[findPPN].inUse = true; 
         pageMap[findPPN].owner = currentThread;
+        
         pageMap[findPPN].vpn = pgNum;
+        numPageFaults ++;
         PPageQueue->Append((void*)&pageMap[findPPN]);
-
+        /*
+        for(int i = 0; i < NumPhysPages; i++)
+        {
+                if(pageMap[i].owner != NULL)
+                        printf("Page :: %d, PID :: %d\n", i, pageMap[i].owner->GetPID());
+        }
+        */
         //ASSERT(FALSE);
 }

@@ -131,9 +131,14 @@ class Condition {
     void Signal(Lock *conditionLock);   // conditionLock must be held by
     void Broadcast(Lock *conditionLock);// the currentThread for all of 
 					// these operations
+    //for implementing condition variables with semaphores
+    void Wait(Semaphore *conditionSemaphore); 
+    void Signal();
+    void Broadcast();
 
   private:
     char* name;
+        List *queue;
     // plus some other stuff you'll need to define
 };
 #endif // SYNCH_H

@@ -92,7 +92,7 @@ main(int argc, char **argv)
         pageMap[i].owner = NULL;
         pageMap[i].ppn=i;
       }
-    replaceAlgo = 1;
+    replaceAlgo = -1;
     //
     DEBUG('t', "Entering main");
     (void) Initialize(argc, argv);
@@ -108,6 +108,7 @@ main(int argc, char **argv)
 #ifdef USER_PROGRAM
         if (!strcmp(*argv, "-A")) {		// read scheduling algorithm
            schedulingAlgo = atoi(*(argv + 1));
+           
            argCount = 2;
            ASSERT((schedulingAlgo > 0) && (schedulingAlgo <= 4));
            if ((schedulingAlgo == ROUND_ROBIN) || (schedulingAlgo == UNIX_SCHED)) {
@@ -121,6 +122,7 @@ main(int argc, char **argv)
         }
         else if(!strcmp(*argv, "-R")){
           replaceAlgo = atoi(*(argv + 1));
+          ASSERT(replaceAlgo > 0 && replaceAlgo < 5);
           argCount = 2;
         } 
         else if (!strcmp(*argv, "-P")) {
